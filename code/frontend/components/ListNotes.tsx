@@ -22,8 +22,8 @@ export function ListNotes() {
               Saved notes
             </h1>
           </div>
-          <p className={styles.count} aria-label={`${listNotesResponse.total} notes`}>
-            {listNotesResponse.total} notes
+          <p className={styles.count} aria-label={`${notes.length} notes`}>
+            {notes.length} notes
           </p>
         </header>
 
