@@ -68,7 +68,7 @@ func applyMigrations(ctx context.Context, db *sql.DB) error {
 	}
 	sort.Strings(entries)
 	for _, path := range entries {
-		version := strings.TrimSuffix(strings.TrimPrefix(path, "migrations/"), ".up.sql")
+		version := strings.TrimSuffix(path, ".up.sql")
 		var exists bool
 		if err := db.QueryRowContext(ctx, `SELECT EXISTS (SELECT 1 FROM schema_migrations WHERE version = $1)`, version).Scan(&exists); err != nil {
 			return err
