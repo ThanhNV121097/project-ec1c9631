@@ -209,3 +209,15 @@ None. No third-party calls, credentials, setup steps, timeout, retry, or idempot
 | Question | Owner | Blocking |
 |---|---|---|
 | Exact inline message for empty Add input | Stakeholder | No; frontend maps `VALIDATION_FAILED` to short inline message |
+
+## 10. Story extension — Delete note
+
+`DELETE /v1/notes/{id}` in section 3.3 is complete for NOTES-003. It removes only matching row with a parameterized primary-key delete. `204` for missing rows preserves idempotency and lets UI remove card when another action already removed it. Other rows and their `created_at DESC, id DESC` order stay unchanged.
+
+### Reviewed UI mock alignment
+
+Reviewed mock `code/frontend/lib/mock/delete-note.ts` renders `id` as number and `created_at` as local-looking `YYYY-MM-DD HH:mm` text. Existing cross-cutting API contract deliberately uses decimal-string IDs and RFC 3339 UTC timestamps. Backend must retain merged contract; frontend API wiring must parse/display these fields without changing delete target semantics. `DELETE` response has no body, so mock note shape does not affect response payload.
+
+### Delete-specific errors
+
+No error codes added. Section 3.3 reuses `MALFORMED_REQUEST` (400), `VALIDATION_FAILED` (422), `UNAVAILABLE` (503), and `INTERNAL` (500). `NOT_FOUND` is deliberately rejected: missing row returns `204` under existing idempotency contract.
