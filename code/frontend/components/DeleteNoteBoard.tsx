@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import styles from './DeleteNoteBoard.module.css';
 import { notes as initialNotes, type Note } from '../lib/mock/delete-note';
 
@@ -8,7 +8,7 @@ export default function DeleteNoteBoard() {
   const [notes, setNotes] = useState<Note[]>(initialNotes);
   const [removingId, setRemovingId] = useState<number | null>(null);
 
-  const countLabel = useMemo(() => `${notes.length} note${notes.length === 1 ? '' : 's'}`, [notes.length]);
+  const countLabel = `${notes.length} note${notes.length === 1 ? '' : 's'}`;
 
   const handleDelete = (id: number) => {
     setRemovingId(id);
@@ -49,7 +49,9 @@ export default function DeleteNoteBoard() {
               <p className={styles.text}>{note.text}</p>
               <div className={styles.foot}>
                 <span className={styles.stamp}><span aria-hidden="true">◔</span><span>{note.created_at}</span></span>
-                <button className={styles.deleteButton} type="button" onClick={() => handleDelete(note.id)} aria-label={`Delete note ${note.id}`}>Delete</button>
+                <button className={styles.deleteButton} type="button" onClick={() => handleDelete(note.id)} aria-label={`Delete note: ${note.text}`}>
+                  Delete
+                </button>
               </div>
             </article>
           )) : (
