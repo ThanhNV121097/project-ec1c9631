@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg: #FAFAF7;
+  --color-surface: #FFFFFF;
+  --color-surface-raised: #FFF7E8;
+  --color-surface-soft: #F3F0E8;
+  --color-border: #E7E1D6;
+  --color-border-soft: #DECFB7;
+  --color-text: #1F2937;
+  --color-text-muted: #6B7280;
+  --color-primary: #F4B860;
+  --color-primary-strong: #E79A1F;
+  --color-primary-text: #3D2600;
+  --color-danger: #DC4C3E;
+  --color-danger-surface: #FFF0EE;
+  --color-danger-border: #F2B7B0;
+  --color-danger-hover-surface: #FFE5E1;
+  --color-chip-text: #8B5A12;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-14: 56px;
+  --text-xs: 14px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --text-2xl: 28px;
+  --text-3xl: 70px;
+  --font-weight-body: 400;
+  --font-weight-medium: 600;
+  --font-weight-heading: 700;
+  --tracking-tight: -0.04em;
+  --tracking-normal: 0;
+  --radius-sm: 14px;
+  --radius-md: 18px;
+  --radius-lg: 20px;
+  --radius-xl: 22px;
+  --radius-2xl: 24px;
+  --radius-3xl: 28px;
+  --radius-full: 999px;
+  --border-width: 1px;
+  --border-width-strong: 1.5px;
+  --shadow-sm: 0 8px 18px rgba(31,41,55,.05);
+  --shadow-md: 0 10px 20px rgba(244,184,96,.28);
+  --shadow-lg: 0 18px 40px rgba(31,41,55,.08);
+  --duration-fast: 180ms;
+  --duration-base: 220ms;
+  --easing: ease;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--color-bg); color: var(--color-text); font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: var(--text-base); font-weight: var(--font-weight-body); line-height: 1.5; }
+h1, h2, h3, h4, h5, h6 { font-weight: var(--font-weight-heading); letter-spacing: var(--tracking-normal); }
+h1 { letter-spacing: var(--tracking-tight); }
+button, textarea { font: inherit; }
+:focus-visible { outline: var(--border-width-strong) solid var(--color-primary-strong); outline-offset: var(--space-1); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms; transition-duration: 0.01ms; } }
