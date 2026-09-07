@@ -12,10 +12,7 @@ export default function AddNoteBoard() {
   const [text, setText] = useState('');
   const [error, setError] = useState('');
 
-  const countLabel = useMemo(
-    () => `${notes.length} note${notes.length === 1 ? '' : 's'}`,
-    [notes.length],
-  );
+  const countLabel = `${notes.length} note${notes.length === 1 ? '' : 's'}`;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
