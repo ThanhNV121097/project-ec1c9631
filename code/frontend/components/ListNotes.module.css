@@ -4,7 +4,7 @@
 }
 
 .shell {
-  max-width: 1100px;
+  width: 100%;
   margin: 0 auto;
   padding: var(--space-8);
   border: var(--border-width) solid var(--color-border);
@@ -49,15 +49,15 @@
 .grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 18px;
+  gap: var(--space-4);
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
 .card {
-  min-height: 160px;
-  padding: 16px 16px 14px;
+  min-height: calc(var(--space-10) * 4);
+  padding: var(--space-4) var(--space-4) var(--space-3);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-xl);
   background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-surface-raised) 100%);
@@ -78,8 +78,8 @@
 }
 
 .empty {
-  padding: 34px 18px;
-  border: 1px dashed var(--color-border-soft);
+  padding: var(--space-8) var(--space-4);
+  border: var(--border-width) dashed var(--color-border-soft);
   border-radius: var(--radius-2xl);
   background: var(--color-surface-soft);
   text-align: center;
@@ -101,6 +101,10 @@
     padding: var(--space-12) var(--space-8);
   }
 
+  .shell {
+    max-width: calc(var(--space-14) * 19 + var(--space-6));
+  }
+
   .grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -112,3 +116,4 @@
     transition: none;
   }
 }
+
