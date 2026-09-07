@@ -186,7 +186,7 @@
 }
 
 .card {
-  background: linear-gradient(180deg, #fffdf8, var(--color-surface));
+  background: linear-gradient(180deg, var(--color-surface), var(--color-surface-soft));
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-xl);
   padding: 16px 16px 14px;
