@@ -7,6 +7,14 @@ import styles from './AddNoteBoard.module.css';
 
 const MAX_LENGTH = 280;
 
+function formatCreatedAt(value: string) {
+  return value.replace('T', ' ').replace('Z', '');
+}
+
+function makeCreatedAt() {
+  return new Date().toISOString();
+}
+
 export default function AddNoteBoard() {
   const [notes, setNotes] = useState<Note[]>(initialNotes);
   const [text, setText] = useState('');
@@ -25,7 +33,7 @@ export default function AddNoteBoard() {
       setError('Note must be 280 characters or less.');
       return;
     }
-    setNotes((current) => [{ id: Date.now(), text: value, created_at: '2025-02-14 10:12' }, ...current]);
+    setNotes((current) => [{ id: Date.now(), text: value, created_at: makeCreatedAt() }, ...current]);
     setText('');
     setError('');
   }
@@ -65,7 +73,6 @@ export default function AddNoteBoard() {
               onChange={(event) => { setText(event.target.value); setError(''); }}
               aria-describedby="noteHelp noteError"
               placeholder="Jot down a task, reminder, or quick idea."
-              maxLength={MAX_LENGTH}
             />
             <div className={styles.meta}>
               <div className={styles.error} id="noteError" aria-live="polite">{error}</div>
@@ -95,7 +102,7 @@ export default function AddNoteBoard() {
               <article key={note.id} className={styles.card}>
                 <p className={styles.text}>{note.text}</p>
                 <div className={styles.foot}>
-                  <span className={styles.stamp}>{note.created_at}</span>
+                  <span className={styles.stamp}>{formatCreatedAt(note.created_at)}</span>
                   <button className={styles.deleteButton} type="button" aria-label={`Delete note ${note.id}`}>Delete</button>
                 </div>
               </article>
