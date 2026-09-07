@@ -30,6 +30,7 @@ Notes module lets user see saved notes, add new note, and delete existing note i
 - Edit note text — deliberately not built; brief says no editing.
 - Tags, search, pagination, filters, or sorting controls — deliberately not built; brief says no tags, no search, no pagination, and newest-first order is fixed.
 - Any module other than `notes` — no other module exists for this project.
+- Card add/remove animation beyond approved gentle motion — not required as separate user control; motion is part of the approved UI only for card insertion/removal feedback.
 
 ## 4. Functional requirements
 
@@ -44,7 +45,8 @@ Behaviour:
 1. Given saved notes exist, when the page loads, then the page shows every saved note as a card.
 2. The cards appear in descending `created_at` order, with newest note first.
 3. Each card shows note text and `created_at` timestamp.
-4. If no notes exist, the page shows the approved empty-state content instead of cards.
+4. The screen shows live total notes count in the header or summary area, and the count updates whenever notes are added or deleted.
+5. If no notes exist, the page shows the approved empty-state content instead of cards.
 
 **Acceptance criteria** — each maps one-to-one onto a test case in `docs/notes/test-cases/list-notes.md`. Given/When/Then, no compound conditions: one behaviour per criterion.
 
@@ -53,7 +55,8 @@ Behaviour:
 | AC-1 | Stored notes exist | Page loads | Every saved note appears as a card |
 | AC-2 | Stored notes have different `created_at` values | Page loads | Newest `created_at` appears first |
 | AC-3 | Stored note has text and `created_at` | Page loads | Card shows both text and timestamp |
-| AC-4 | No saved notes exist | Page loads | Empty-state content from approved design appears |
+| AC-4 | Stored notes change after add or delete | UI updates | Live notes count reflects current total |
+| AC-5 | No saved notes exist | Page loads | Empty-state content from approved design appears |
 
 **Failure, boundary and permission behaviour**
 
@@ -83,7 +86,8 @@ Behaviour:
 2. The saved note gets a `created_at` timestamp.
 3. After success, the input box clears.
 4. After success, the new note appears in the list as newest first.
-5. If input text is longer than 280 characters, the note is not saved.
+5. After success, card add motion from the approved design may play while the new card enters the list.
+6. If input text is longer than 280 characters, the note is not saved.
 
 **Acceptance criteria**
 
@@ -93,7 +97,8 @@ Behaviour:
 | AC-2 | Guest saves a note | Save succeeds | Saved note has `created_at` timestamp |
 | AC-3 | Guest saves a note | Save succeeds | Text box clears |
 | AC-4 | Guest saves a note | Save succeeds | New note appears first in list |
-| AC-5 | Text box contains more than 280 characters | Guest presses Add | Note is rejected and nothing is saved |
+| AC-5 | Guest saves a note | Save succeeds | Add motion may play on the new card |
+| AC-6 | Text box contains more than 280 characters | Guest presses Add | Note is rejected and nothing is saved |
 
 **Failure, boundary and permission behaviour**
 
@@ -125,6 +130,7 @@ Behaviour:
 2. The deleted note no longer appears in the list after the action completes.
 3. Other notes remain unchanged.
 4. Deleting one note does not change note order for remaining notes.
+5. After success, card remove motion from the approved design may play while the card leaves the list.
 
 **Acceptance criteria**
 
@@ -134,6 +140,7 @@ Behaviour:
 | AC-2 | A note is deleted | Removal succeeds | Deleted note no longer appears in list |
 | AC-3 | Multiple notes exist | Guest deletes one note | Other notes remain visible and unchanged |
 | AC-4 | Multiple notes exist | Guest deletes one note | Remaining note order stays the same |
+| AC-5 | A note is deleted | Removal succeeds | Remove motion may play on the deleted card |
 
 **Failure, boundary and permission behaviour**
 
@@ -173,6 +180,8 @@ The design is the source of truth for appearance; this section maps functions on
 
 - **Depends on:** Postgres `notes` table, for storing note records.
 - **Assumption:** Empty state is part of approved design and appears only when no notes exist.
+- **Assumption:** Live notes count is part of approved design and updates with list changes.
+- **Assumption:** Gentle add/remove motion on cards is part of approved design and may appear during insert/delete transitions.
 
 | Open question | Proposed default | Who decides |
 |---|---|---|
