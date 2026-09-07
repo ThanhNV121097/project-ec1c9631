@@ -17,7 +17,7 @@ export default function AddNoteBoard() {
     [notes.length],
   );
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const value = text.trim();
     if (!value) {
