@@ -98,8 +98,8 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--color-primary);
   display: inline-block;
+  background: var(--color-primary);
 }
 
 .counter {
