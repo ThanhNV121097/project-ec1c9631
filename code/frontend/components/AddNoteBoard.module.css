@@ -66,9 +66,8 @@
 }
 
 .summary {
-  background: rgba(255, 255, 255, 0.78);
-  backdrop-filter: blur(12px);
-  border: var(--border-width) solid rgba(231, 225, 214, 0.9);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-3xl);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
