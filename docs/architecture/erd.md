@@ -92,3 +92,11 @@ No backfill or concurrent index strategy is needed for initial empty table. Futu
 ## 9. Open questions
 
 none.
+
+## 10. Story design addendum — List notes
+
+Reviewed UI mock contract: `code/frontend/lib/mock/list-notes.ts` models `data` plus `total`, with `id`, `text`, and `created_at` per note. No entity, column, constraint, or index is needed for NOTES-001; section 3.1 already supplies every field and newest-first access path.
+
+**Contract correction for API wiring** — reviewed mock uses numeric `id` values and timestamp-like strings without RFC 3339 UTC offset. This conflicts with project-wide wire convention in `docs/architecture/services.md` §2.1. Backend keeps decimal-string IDs and RFC 3339 UTC `created_at` values. Frontend mock and API adapter must update in API-wiring work; no schema change is required.
+
+**Migration plan** — none for this story beyond existing migration `000001_create_notes`. Forward: apply it to create `notes`, constraints, and listing index. Backward: run paired down migration only when stored note loss is acceptable. It is safe on populated databases that do not already contain `notes`; no backfill is required. Existing down migration destroys `notes` rows.
