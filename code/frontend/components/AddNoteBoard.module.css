@@ -18,7 +18,7 @@
   align-items: center;
   background: var(--color-surface-raised);
   color: var(--color-chip-text);
-  border: var(--border-width) solid #f6ddb0;
+  border: var(--border-width) solid var(--color-border);
   padding: 8px 12px;
   border-radius: var(--radius-full);
   font-size: var(--text-xs);
