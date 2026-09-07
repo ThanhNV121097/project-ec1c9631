@@ -76,7 +76,7 @@ func applyMigrations(ctx context.Context, db *sql.DB) error {
 		if exists {
 			continue
 		}
-		sqlBytes, err := migrationFiles.ReadFile(path)
+		sqlBytes, err := migrations.Files.ReadFile(path)
 		if err != nil {
 			return err
 		}
