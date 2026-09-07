@@ -1,5 +1,6 @@
 "use client";
 
+import type { FormEvent } from 'react';
 import { useMemo, useState } from 'react';
 import { initialNotes, type Note } from '../lib/mock/add-note';
 import styles from './AddNoteBoard.module.css';
