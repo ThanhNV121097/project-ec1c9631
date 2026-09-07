@@ -62,7 +62,7 @@ func applyMigrations(ctx context.Context, db *sql.DB) error {
 	if _, err := db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS schema_migrations (version text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`); err != nil {
 		return err
 	}
-	entries, err := fs.Glob(migrationFiles, "migrations/*.up.sql")
+	entries, err := fs.Glob(migrations.Files, "*.up.sql")
 	if err != nil {
 		return err
 	}
