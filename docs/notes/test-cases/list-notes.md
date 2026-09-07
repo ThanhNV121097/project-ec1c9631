@@ -1,39 +1,59 @@
 # Test Cases — List notes
 
-Risk level: medium. Read path only, but it crosses DB → API → browser, so order and contract shape matter.
+Risk level: medium. List is core landing state, but scope is narrow and behavior is fully specified by SRS and service contract.
 
-## Scenario: Empty list loads as no cards
-**Given** notes table has no rows and app is reachable
-**When** page opens and browser requests `GET /v1/notes`
-**Then** API returns `200` with JSON body `{"data":[],"total":0}` and page shows no note cards
-Check: render_url
+## Case 1
+**Scenario**: Load all saved notes as cards
+**Given**: Stored notes exist in `notes` table
+**When**: Page loads
+**Then**: Every saved note appears as a card, and each card shows that note's text and `created_at` timestamp.
+**Check**: render_url
+**Trace**: NOTES-001 AC-1, AC-3
 
-## Scenario: Existing notes load newest first
-**Given** notes table has 3 rows with different `created_at` values and different IDs, including one newest row
-**When** page opens and browser requests `GET /v1/notes`
-**Then** API returns `200` with `data` ordered by `created_at DESC, id DESC`, `total` equals 3, and first rendered card is newest row
-Check: render_url
+## Case 2
+**Scenario**: Show newest note first
+**Given**: Stored notes exist with different `created_at` values
+**When**: Page loads
+**Then**: Cards render in descending `created_at` order, with newest note first.
+**Check**: render_url
+**Trace**: NOTES-001 AC-2
 
-## Scenario: Loaded note card shows text and created_at
-**Given** notes table has 1 row with text `Buy tea` and RFC 3339 UTC `created_at`
-**When** page opens and browser requests `GET /v1/notes`
-**Then** rendered card displays exact stored text `Buy tea` and exact stored `created_at` value
-Check: render_url
+## Case 3
+**Scenario**: Show live total with saved notes
+**Given**: Stored notes exist
+**When**: Page loads and list finishes rendering
+**Then**: Header or summary area shows total notes count equal to current saved notes.
+**Check**: render_url
+**Trace**: NOTES-001 AC-4
 
-## Scenario: List response includes required note fields only
-**Given** notes table has 1 saved row
-**When** client fetches `GET /v1/notes`
-**Then** response status is `200`, body has top-level `data` array and `total` integer, and each note object includes `id`, `text`, and `created_at`
-Check: fetch_url
+## Case 4
+**Scenario**: Show empty state when no notes exist
+**Given**: No saved notes exist
+**When**: Page loads
+**Then**: Approved empty-state content appears and no note cards render.
+**Check**: render_url
+**Trace**: NOTES-001 AC-5
 
-## Scenario: Notes API unavailable returns retryable error
-**Given** backend cannot reach Postgres while app is running
-**When** client fetches `GET /v1/notes`
-**Then** response status is `503` and error body has `error.code` equal `UNAVAILABLE`
-Check: fetch_url
+## Case 5
+**Scenario**: List endpoint returns collection envelope
+**Given**: Browser requests `GET /v1/notes`
+**When**: API responds successfully
+**Then**: Response status is `200` and body has `data` array plus `total` integer.
+**Check**: fetch_url
+**Trace**: services.md 2.4, 3.1 success shape
 
-## Scenario: Unexpected server failure returns internal error envelope
-**Given** list handler hits an unexpected server failure
-**When** client fetches `GET /v1/notes`
-**Then** response status is `500` and error body has `error.code` equal `INTERNAL`
-Check: fetch_url
+## Case 6
+**Scenario**: List endpoint keeps empty collection shape
+**Given**: No saved notes exist and browser requests `GET /v1/notes`
+**When**: API responds successfully
+**Then**: Response body is `{"data":[],"total":0}`.
+**Check**: fetch_url
+**Trace**: services.md 3.1 notes on empty list
+
+## Case 7
+**Scenario**: List endpoint rejects bad path or unavailable storage
+**Given**: Browser requests invalid list route or storage read cannot complete
+**When**: API responds
+**Then**: Invalid route or path syntax returns `400` `MALFORMED_REQUEST`; storage failure returns `503` `UNAVAILABLE`.
+**Check**: fetch_url
+**Trace**: services.md 2.3, 3.1 errors
