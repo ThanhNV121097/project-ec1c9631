@@ -1,40 +1,40 @@
 # Service & Interface Design — Sticky Notes
 
-Last updated: 2026-05-27  
+Last updated: 2026-05-27
 Source: `docs/notes/SRS.md`, `docs/architecture/erd.md`, `docs/architecture/overview.md`
 
 ## 1. Service map
 
 ```mermaid
 flowchart LR
-    Browser[Next.js frontend] -->|HTTPS / JSON| API[Notes API]
+    Browser[Next.js frontend] -->|HTTPS / JSON| API[Notes API service]
     API -->|SQL| DB[(PostgreSQL)]
 ```
 
 | Service | Responsibility | Owns (tables) | Depends on | Deploy unit |
 |---|---|---|---|---|
-| Notes API | List, create, and hard-delete notes | `notes` | PostgreSQL 16 | `backend` container |
+| Notes API | List, create, and hard-delete notes | `notes` | PostgreSQL 16 | Go backend container |
 
-**Why these boundaries** — single service: no boundary justified yet. Frontend and API deploy separately, but only Notes API writes or reads `notes`.
+**Why these boundaries** — single service: no boundary justified yet. Frontend and API deploy separately, but API owns all database access. `notes` has exactly one owner: Notes API.
 
 ## 2. Cross-cutting contract
 
 ### 2.1 Base
 
-- Backend route base: `/v1`. Deploy proxy strips external `/api` prefix before backend routing; backend must not mount `/api`.
-- Content type: `application/json; charset=utf-8` for bodies.
-- Versioning: URL major version. New major version only for breaking changes.
-- `X-Request-Id`: accept caller value or generate one; echo it on every response and include it in request logs.
-- Timestamps: RFC 3339 UTC strings. JSON fields use `snake_case`; IDs are decimal strings.
+- Backend route base: `/v1`. Deployment proxy strips external `/api` prefix before backend routing; backend must not mount `/api`.
+- Content type: `application/json; charset=utf-8` for JSON bodies.
+- Versioning: URL-path major version. New major version only for breaking changes.
+- `X-Request-Id`: caller may supply it; API generates one when absent, echoes it on every response, and logs it per request.
+- IDs are decimal strings on wire. Timestamps are RFC 3339 UTC strings.
 
 ### 2.2 Authentication and authorization
 
 | Aspect | Decision |
 |---|---|
-| Mechanism | None. Guest access is approved scope. |
-| Token lifetime / refresh | Not applicable. |
-| Roles | None. |
-| Enforcement point | No auth middleware; handlers allow all guests. |
+| Mechanism | None; all callers are guests in approved scope |
+| Token lifetime / refresh | Not applicable |
+| Roles | None |
+| Enforcement point | Not applicable; no accounts or permissions exist |
 
 ### 2.3 Error contract
 
@@ -44,158 +44,168 @@ Every non-2xx response has this shape:
 {
   "error": {
     "code": "VALIDATION_FAILED",
-    "message": "Text must be between 1 and 280 characters.",
-    "details": [{"field": "text", "code": "OUT_OF_RANGE", "message": "Must contain 1 to 280 characters."}],
-    "request_id": "request-id"
+    "message": "Request validation failed.",
+    "details": [
+      {"field": "text", "code": "TOO_LONG", "message": "Text must contain at most 280 characters."}
+    ],
+    "request_id": "01HX..."
   }
 }
 ```
 
-Consumers branch on `error.code`; `message` and `details[].message` are safe display text, not stable. `details` is omitted unless validation identifies fields.
+Consumers branch only on `error.code`. `message` and detail messages are safe display text and may change. `details` is omitted except for `VALIDATION_FAILED`; each entry has `field`, machine code, and message.
 
 | Code | HTTP | Meaning | Retryable |
 |---|---:|---|---|
-| `MALFORMED_REQUEST` | 400 | Invalid JSON or unsupported JSON shape | no |
-| `VALIDATION_FAILED` | 422 | Well-formed external value fails constraints | no |
+| `MALFORMED_REQUEST` | 400 | Invalid JSON, wrong JSON type, or invalid path syntax | no |
+| `VALIDATION_FAILED` | 422 | Well-formed request fails field validation | no |
 | `INTERNAL` | 500 | Unexpected failure; internals logged only | yes |
-| `UNAVAILABLE` | 503 | Database unavailable, migration incomplete, or service draining | yes |
+| `UNAVAILABLE` | 503 | Database unavailable, timed out, or service draining | yes |
 
 ### 2.4 Pagination
 
-No pagination. `GET /v1/notes` returns every saved note because NOTES-001 requires every note and project target is 100 stored notes. No pagination parameters are accepted. Order is stable `created_at DESC, id DESC`.
+No pagination query parameters exist. `GET /v1/notes` returns every saved note, required by NOTES-001 and bounded by current 100-note performance target. Collection response stays extensible: `{"data": [...], "total": 0}`. Adding pagination later is breaking because scope promises every note; ship a new version or explicit separate endpoint then.
+
+Default order is stable `created_at DESC, id DESC`; database index enforces query access pattern.
 
 ### 2.5 Validation boundary
 
-Notes API HTTP handlers validate path and JSON input before calling repository code: request body is capped at 1 KiB; `text` must be a JSON string with 1–280 Unicode characters after trimming whitespace. `created_at` and `id` are server-generated and rejected if supplied in create input. `id` path value must be a positive base-10 integer fitting PostgreSQL `bigint`. Repository code trusts validated values; database constraints remain final integrity protection.
+Go HTTP handler is validation boundary, before service or SQL call. It caps request body at 4 KiB, rejects malformed JSON and unknown fields, validates every path parameter, and validates `text` as string with 1–280 Unicode characters after trimming only to test emptiness. Original accepted text is stored unchanged. Database constraints remain final integrity backstop.
 
 ### 2.6 Idempotency
 
-No endpoint accepts `Idempotency-Key`. Frontend must not automatically retry `POST /v1/notes`, since retry could create another note. `DELETE /v1/notes/{id}` is idempotent: missing row still returns `204`.
+No endpoint accepts `Idempotency-Key`; schema scope permits only `id`, `text`, and `created_at`, so key replay cannot be durably detected. Clients must not automatically retry `POST /v1/notes` after an unknown result; instead refresh list before another user-initiated add. `DELETE` is idempotent: deleting missing ID returns `204`.
 
 ## 3. Endpoints
 
 ### 3.1 `GET /v1/notes`
 
-**Purpose** — list all saved notes, newest first. **Traces to** — NOTES-001. **Auth** — guest.
+**Purpose** — list every saved note newest first with current total. **Traces to** — NOTES-001. **Auth** — none.
 
-No path, query, or request-body fields are accepted.
+**Path / query parameters** — none. Request body absent.
 
 **Success response** — `200`
 
 ```json
 {
   "data": [
-    {"id": "42", "text": "Buy milk", "created_at": "2026-05-27T10:04:18Z"}
-  ]
+    {"id": "42", "text": "Buy tea", "created_at": "2026-05-27T10:04:18Z"}
+  ],
+  "total": 1
 }
 ```
 
 | Field | Type | Nullable | Description |
 |---|---|---|---|
-| `data` | array of note | no | All notes in `created_at DESC, id DESC` order; empty when none exist. |
-| `data[].id` | string | no | Decimal generated note ID. |
-| `data[].text` | string | no | Stored note body. |
-| `data[].created_at` | string | no | UTC creation time. |
+| `data` | array of note | no | Every saved note, ordered newest first |
+| `data[].id` | string | no | Decimal note ID |
+| `data[].text` | string | no | Stored note body |
+| `data[].created_at` | string | no | Creation timestamp in RFC 3339 UTC |
+| `total` | integer | no | Current number of saved notes; equals `data` length |
 
 **Errors**
 
 | Code | HTTP | Trigger |
 |---|---:|---|
-| `INTERNAL` | 500 | Unexpected processing failure. |
-| `UNAVAILABLE` | 503 | Database cannot serve read. |
+| `UNAVAILABLE` | 503 | Database query cannot complete because dependency is unavailable or timed out |
+| `INTERNAL` | 500 | Unexpected server failure |
+
+**Notes** — empty list returns `{"data":[],"total":0}`. No side effects.
 
 ### 3.2 `POST /v1/notes`
 
-**Purpose** — create one note. **Traces to** — NOTES-002. **Auth** — guest.
+**Purpose** — create one note. **Traces to** — NOTES-002. **Auth** — none.
 
 **Request body**
 
 ```json
-{"text": "Buy milk"}
+{"text": "Buy tea"}
 ```
 
 | Field | Type | Required | Constraints | Description |
 |---|---|---|---|---|
-| `text` | string | yes | Trimmed value: 1–280 Unicode characters | Note body. |
+| `text` | string | yes | Non-empty after trim; maximum 280 Unicode characters | Note body |
 
-Unknown fields are rejected as `MALFORMED_REQUEST`.
-
-**Success response** — `201`; `Location: /v1/notes/{id}`
+**Success response** — `201`, with `Location: /v1/notes/{id}`
 
 ```json
-{"id": "42", "text": "Buy milk", "created_at": "2026-05-27T10:04:18Z"}
+{"id":"42","text":"Buy tea","created_at":"2026-05-27T10:04:18Z"}
 ```
 
-Response fields have same types and meanings as list note fields. `created_at` is database-generated UTC time.
+| Field | Type | Nullable | Description |
+|---|---|---|---|
+| `id` | string | no | Generated decimal note ID |
+| `text` | string | no | Stored request text |
+| `created_at` | string | no | Database-generated RFC 3339 UTC timestamp |
 
 **Errors**
 
 | Code | HTTP | Trigger |
 |---|---:|---|
-| `MALFORMED_REQUEST` | 400 | Invalid JSON, non-object body, unknown field, or wrong JSON type. |
-| `VALIDATION_FAILED` | 422 | Missing, empty, whitespace-only, or over-280-character `text`. |
-| `INTERNAL` | 500 | Unexpected processing failure. |
-| `UNAVAILABLE` | 503 | Database cannot save note. |
+| `MALFORMED_REQUEST` | 400 | Invalid JSON, non-object body, unknown field, or body exceeds 4 KiB |
+| `VALIDATION_FAILED` | 422 | Missing, empty/whitespace-only, or over-280-character `text` |
+| `UNAVAILABLE` | 503 | Database insert cannot complete because dependency is unavailable or timed out |
+| `INTERNAL` | 500 | Unexpected server failure |
 
-**Notes** — no retry or idempotency key. Successful creation commits exactly one row.
+**Notes** — server creates `id` and `created_at`; client cannot send either. No automatic client retry after unknown outcome.
 
 ### 3.3 `DELETE /v1/notes/{id}`
 
-**Purpose** — hard-delete one note. **Traces to** — NOTES-003. **Auth** — guest.
+**Purpose** — hard-delete one note. **Traces to** — NOTES-003. **Auth** — none.
+
+**Path parameters**
 
 | Name | In | Type | Required | Constraints | Description |
 |---|---|---|---|---|---|
-| `id` | path | string | yes | Positive base-10 `bigint` | Note ID. |
+| `id` | path | string | yes | Base-10 integer greater than zero; no sign, decimal, or whitespace | Note ID |
 
-No request body is accepted.
+Request body absent.
 
-**Success response** — `204`, no body. A missing row also returns `204`; client removes target card, satisfying already-removed behavior without duplicate delete state.
+**Success response** — `204`, no body.
 
 **Errors**
 
 | Code | HTTP | Trigger |
 |---|---:|---|
-| `VALIDATION_FAILED` | 422 | `id` is absent, non-numeric, zero, negative, or out of range. |
-| `INTERNAL` | 500 | Unexpected processing failure. |
-| `UNAVAILABLE` | 503 | Database cannot delete note. |
+| `MALFORMED_REQUEST` | 400 | Path ID syntax is not valid decimal integer |
+| `VALIDATION_FAILED` | 422 | Path ID is zero or negative |
+| `UNAVAILABLE` | 503 | Database delete cannot complete because dependency is unavailable or timed out |
+| `INTERNAL` | 500 | Unexpected server failure |
 
-**Notes** — idempotent. Hard delete changes no other rows and preserves remaining list ordering.
+**Notes** — missing note also returns `204`; deletion is idempotent and satisfies already-removed card behavior. No cascade exists.
 
 ## 4. Asynchronous work
 
-None. Requests synchronously query PostgreSQL. No queues, jobs, schedules, or events.
+None. No queues, schedules, events, or cross-service calls exist.
 
 ## 5. External integrations
 
-None. PostgreSQL is owned project infrastructure, not a third-party integration. No cross-service calls, credentials beyond `DATABASE_URL`, callback registration, timeouts, retries, or idempotency keys apply.
+None. No third-party calls, credentials, setup steps, timeout, retry, or idempotency policy required.
 
 ## 6. Non-functional targets
 
 | Aspect | Target |
 |---|---|
-| p95 latency (read) | ≤1 s end-to-end on stated 1 Mbps cold-cache target with 100 notes |
-| p95 latency (write) | ≤1 s end-to-end on stated target |
-| Availability | Development project; no availability SLA |
-| Rate limit | None in approved scope |
-| Payload cap | 1 KiB for create body |
-| Timeout (inbound) | 5 s request deadline; return `UNAVAILABLE` if database work cannot complete |
+| p95 latency (read) | 2 seconds end-to-end page-load target for 100 notes on 1 Mbps cold cache |
+| p95 latency (write) | 1 second end-to-end add/delete UI target on 1 Mbps cold cache |
+| Payload cap | 4 KiB request body; list response sized by current 100-note target |
+| Timeout (inbound) | 5 seconds request deadline; database work uses remaining request context |
 
 ## 7. Observability
 
-- Every request log: `request_id`, method, path, status, duration_ms; database failures also log internal error context.
-- Metrics per endpoint: request count, error count, duration.
-- Never log note text, request body, credentials, or database URL.
+- Every request log: `request_id`, method, route, status, duration, and error code when present.
+- Metrics per endpoint: request rate, error count by code, duration.
+- Never log full request bodies, note text, database URLs, or credentials.
 
 ## 8. Contract evolution
 
 | Change | Additive or breaking | Migration path |
 |---|---|---|
-| Initial `/v1/notes` endpoints | Additive | First consumer contract. |
-| Future optional response field or endpoint | Additive | Ship under `/v1`; frontend ignores unknown fields. |
-| Remove/rename field, alter ordering, change validation/status | Breaking | Add `/v2` only after frontend migrates; retain `/v1` through announced deprecation. |
+| Add optional response field or new endpoint | Additive | Keep `/v1` existing behavior unchanged |
+| Change/remove field, status, error mapping, ordering, validation, or list-all behavior | Breaking | Release `/v2`, migrate frontend, then deprecate `/v1` with date header |
 
 ## 9. Open questions
 
 | Question | Owner | Blocking |
 |---|---|---|
-| Exact inline empty-text message | Stakeholder | No; API returns `VALIDATION_FAILED`. |
+| Exact inline message for empty Add input | Stakeholder | No; frontend maps `VALIDATION_FAILED` to short inline message |
