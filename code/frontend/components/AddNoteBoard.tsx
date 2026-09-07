@@ -28,7 +28,7 @@ export default function AddNoteBoard() {
       setError('Note must be 280 characters or less.');
       return;
     }
-    setNotes([{ id: Date.now(), text: value, created_at: '2025-02-14 10:12' }, ...notes]);
+    setNotes((current) => [{ id: Date.now(), text: value, created_at: '2025-02-14 10:12' }, ...current]);
     setText('');
     setError('');
   }
