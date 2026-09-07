@@ -92,3 +92,15 @@ No backfill or concurrent index strategy is needed for initial empty table. Futu
 ## 9. Open questions
 
 none.
+
+## 10. Story extension — Delete note
+
+Delete note uses existing `notes` aggregate unchanged. It requires only primary-key lookup and hard deletion; primary key already serves `DELETE FROM notes WHERE id = $1`.
+
+**Schema change** — none. Existing `id`, `text`, and `created_at` fields meet NOTES-003. No foreign key, index, entity, audit row, soft-delete flag, or timestamp update is needed.
+
+**Migration plan**
+
+| Change | Forward | Backward | Safe on populated table |
+|---|---|---|---|
+| Delete note story | No migration; use initial `notes` schema. | No rollback action; no schema changed. | Yes; deployment only adds API behavior and does not alter existing rows. |
