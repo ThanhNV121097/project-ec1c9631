@@ -4,7 +4,7 @@ import { listNotesResponse } from "@/lib/mock/list-notes";
 import styles from "./ListNotes.module.css";
 
 function formatCreatedAt(value: string) {
-  return value;
+  return value.replace("T", " ").replace("Z", "");
 }
 
 export function ListNotes() {
