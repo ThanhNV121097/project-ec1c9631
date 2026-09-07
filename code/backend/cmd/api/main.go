@@ -13,11 +13,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ThanhNV121097/project-ec1c9631/backend/migrations"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
-
-//go:embed migrations/*.up.sql
-var migrationFiles embed.FS
 
 func main() {
 	databaseURL := os.Getenv("DATABASE_URL")
